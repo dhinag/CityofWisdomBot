@@ -6,12 +6,9 @@
     using System.Threading.Tasks;
     using System.Web.Http;
     using Microsoft.Bot.Connector;
-    using Newtonsoft.Json.Linq;
     using Services;
-    using Newtonsoft.Json;
     using System.Web.Configuration;
     using Microsoft.Bot.Builder.Dialogs;
-    using CityOfWisdomBot.Domains;
     using CityOfWisdomBot.Constants;
     using CityOfWisdomBot.Dialog;
 
@@ -31,11 +28,6 @@
         /// </summary>
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
-            //if (activity.Value != null)
-            //{
-            //    ParseMessageFromCRM(activity);
-            //}
-
             //When the user taps on "Get Started" button on Messenger, "requestWelcome" is sent by FB Messenger in the payload.
             //We use this in order to display welcome message to the user.
             if (activity.Text == "requestWelcome")
@@ -57,44 +49,6 @@
             }
             var result = Request.CreateResponse(HttpStatusCode.OK);
             return result;
-        }
-        /// <summary>
-        /// The bot is obviously stateless. When we get the message from D365, we need to parse the data to find out which citizen should receive what message on which channel.
-        /// </summary>
-        /// <param name="activity"></param>
-        private  void ParseMessageFromCRM(Activity activity)
-        {
-            var message = JsonConvert.DeserializeObject<QueueMessage>(((JObject)activity.Value).GetValue("Message").ToString());
-
-            //Conversation ID is generally the key in order to reply to the same conversation in the channel.
-            //TODO: What happens when the user closes/deletes the conversation? We need to start a new conversation.
-            if(!string.IsNullOrEmpty(message.ConversationID))
-            {
-                var userAccount = new ChannelAccount(message.RecipientID, message.RecipientName);
-                var botAccount = new ChannelAccount(message.FromID, message.FromName);
-
-                var connector = new ConnectorClient(new Uri(message.ServiceURL), new MicrosoftAppCredentials(ApiKey, ApiEndpoint));
-                MicrosoftAppCredentials.TrustServiceUrl(message.ServiceURL);
-
-                var alertMessage = Activity.CreateMessageActivity();
-                if (!string.IsNullOrEmpty(message.ConversationID) && !string.IsNullOrEmpty(message.ChannelID))
-                {
-                    alertMessage.ChannelId = message.ChannelID;
-                }
-                else
-                {
-                   message.ConversationID = (connector.Conversations.CreateDirectConversationAsync(botAccount, userAccount)).Id.ToString();
-                }
-
-                alertMessage.Recipient = botAccount;
-                alertMessage.From = userAccount;
-                alertMessage.Conversation = new ConversationAccount(id: message.ConversationID);
-                alertMessage.Text = message.Alert;
-                alertMessage.Locale = "en-Us";
-
-                //Once the connection is established to the channel and the conversation, the bot can reply with the text.
-                connector.Conversations.SendToConversationAsync((Activity)alertMessage);
-            }
         }
 
         /// <summary>
