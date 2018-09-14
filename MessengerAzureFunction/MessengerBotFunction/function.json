@@ -1,0 +1,19 @@
+{
+  "bindings": [
+    {
+      "name": "queueMessage",
+      "type": "queueTrigger",
+      "direction": "in",
+      "queueName": "botqueue",
+      "connection": "AzureWebJobsDashboard"
+    },
+    {
+      "type": "bot",
+      "name": "botMessage",
+      "botId": "", //add the bot ID here
+      "secret": "", //add the bot's directline secret here
+      "direction": "out"
+    }
+  ],
+  "disabled": true
+}
